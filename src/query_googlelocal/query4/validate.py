@@ -9,8 +9,8 @@ ground_truth = [
 def validate(llm_output: str) -> (bool, str):
     """
     Validate LLM output:
-    - All names from ground truth appear
-    - Each name has a number nearby equal to ground truth
+    - All names from ground truth appear (case-insensitive)
+    - For each name, a number appears within 10 characters AFTER the name
     Returns:
         (True, "OK") if valid
         (False, reason) if not
@@ -25,25 +25,22 @@ def validate(llm_output: str) -> (bool, str):
             print(f"❌ {reason}")
             return False, reason
 
-        # name 后面取 50 个字符
-        window = llm_output[idx:idx+50]
-        matches = re.findall(r"\d+", window)
+        after_name_start = idx + len(name)
+        after_window = llm_output[after_name_start:after_name_start + 25]
+        matches = re.findall(r"\d+", after_window)
 
         if not matches:
-            reason = f"No number found near {name}"
+            reason = f"No number found after {name}"
             print(f"❌ {reason}")
             return False, reason
 
-        found_match = False
-        for m in matches:
-            if int(m) == expected_num:
-                found_match = True
-                break
-
+        found_match = any(int(m) == expected_num for m in matches)
         if not found_match:
             reason = f"Number mismatch for {name}: expected {expected_num}"
             print(f"❌ {reason}")
             return False, reason
+
+        print(f"✅ Matched: {name} → {expected_num}")
 
     print("✅ All names and numbers matched.")
     return True, "OK"

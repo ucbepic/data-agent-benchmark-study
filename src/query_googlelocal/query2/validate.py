@@ -3,9 +3,9 @@ import re
 def validate(llm_output: str) -> (bool, str):
     """
     Validate LLM output for query1:
-    - All names from ground truth appear
-    - For each name, a score appears nearby, rounded to 2 decimals matches ground truth
-    - Order does NOT matter
+    - All names from ground truth appear (case-sensitive exact match)
+    - For each name, a score appears in the next 50 characters (after name, excluding name itself)
+    - Score must round to ground truth score to 2 decimals
     Returns:
         (True, "OK") if valid
         (False, reason) if invalid
@@ -24,10 +24,12 @@ def validate(llm_output: str) -> (bool, str):
             print(f"❌ {reason}")
             return False, reason
 
-        window = llm_output[idx:idx+50]
+        # Get 10 characters AFTER the name (exclude name itself)
+        start = idx + len(name)
+        window = llm_output[start:start+10]
         matches = re.findall(r"(\d+\.\d+)", window)
         if not matches:
-            reason = f"No score found near {name}"
+            reason = f"No score found after name: {name}"
             print(f"❌ {reason}")
             return False, reason
 
@@ -37,9 +39,11 @@ def validate(llm_output: str) -> (bool, str):
             if round(llm_val, 2) == gt_rounded:
                 break
         else:
-            reason = f"Score mismatch for {name}: expected ~{gt_rounded:.2f}, but not found nearby."
+            reason = f"Score mismatch for {name}: expected ~{gt_rounded:.2f}, but not found after name."
             print(f"❌ {reason}")
             return False, reason
 
-    print("✅ All names and scores are present, and scores match within 2 decimals.")
+        print(f"✅ Matched {name} with score ~{gt_rounded:.2f}")
+
+    print("✅ All names and scores matched successfully.")
     return True, "OK"

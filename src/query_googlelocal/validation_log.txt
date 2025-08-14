@@ -1,0 +1,48 @@
+=== Validation Log (2025-08-14T14:41:49) ===
+Query: query4
+
+LLM Answer:
+Encino Dermatology & Laser: Alex Khadavi MD – 19
+The Boochyard @ Local Roots – 17
+Aurora Massage – 14
+
+Ground Truth:
+Encino Dermatology & Laser: Alex Khadavi MD,19
+The Boochyard @ Local Roots,17
+Aurora Massage,14
+
+Result: ✅ MATCH
+================================================================================
+
+=== Validation Log (2025-08-14T14:40:42) ===
+Query: query4
+
+LLM Answer:
+Encino Dermatology & Laser: Alex Khadavi MD – 19
+The Boochyard @ Local Roots – 17
+Aurora Massage – 14
+
+Ground Truth:
+Encino Dermatology & Laser: Alex Khadavi MD,19
+The Boochyard @ Local Roots,17
+Aurora Massage,14
+
+Result: ❌ MISMATCH: No number found after Encino Dermatology & Laser
+================================================================================
+
+=== Validation Log (2025-08-14T14:38:53) ===
+Query: query4
+
+LLM Answer:
+Encino Dermatology & Laser: Alex Khadavi MD - 19
+The Boochyard @ Local Roots - 17
+Aurora Massage - 14
+
+Ground Truth:
+Encino Dermatology & Laser: Alex Khadavi MD,19
+The Boochyard @ Local Roots,17
+Aurora Massage,14
+
+Result: ❌ MISMATCH: No number found after Encino Dermatology & Laser
+================================================================================
+
