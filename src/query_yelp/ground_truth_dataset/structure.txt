@@ -1,0 +1,14 @@
+business 100
+checkin: 90
+review: 2000
+tip: 784
+user: 1999
+
+         business_id
+           ↓
+     ┌───────────────┬──────────────┐
+  checkin          review         tip
+                     ↓              ↓
+                 user_id        user_id
+                     \           /
+                      →→→ user  ←←←

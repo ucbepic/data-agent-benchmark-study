@@ -1,0 +1,33 @@
+You are working with two datasets to solve this query.
+
+Here are the descriptions of these two datasets:
+
+1. **review_dataset** {review_query.db}
+   - This dataset is stored in a SQLite database and contains Amazon book review information including ratings, text, helpfulness votes, etc. up to 2023.
+   - Fields:
+     - rating (float): Rating given by reviewer (1.0-5.0 scale)
+     - title (str): Book title
+     - text (str): Review text content
+     - purchase_id (str): Unique identifier linking to book_id in books_dataset
+     - review_time (str): Timestamp when review was posted
+     - helpful_vote (int): Number of helpful votes received
+     - verified_purchase (bool): Whether purchase was verified
+
+2. **books_dataset** {books_info.sql}
+   - This dataset is stored in a PostgreSQL database and contains Amazon book information including descriptions, price, details, title, etc. up to 2023.
+   - Fields:
+     - title (str): Book title
+     - subtitle (str): Book subtitle
+     - author (str): Book author(s)
+     - rating_number (int): Total number of ratings received
+     - features (str): Book features (stored as string representation of list/dict)
+     - description (str): Book description (stored as string representation of list/dict)
+     - price (float): Book price
+     - store (str): Store information
+     - categories (str): Book categories (stored as string representation of list/dict)
+     - details (str): Additional book details
+     - book_id (str): Unique book identifier
+
+### Hint: In books_info.sql, the "description", "categories", and "features" content appears to be in list or dictionary format, but they are actually stored as strings in the .sql file.
+### Hint: The fields book_id in books_info.sql and purchase_id in review_query.db refer to the same book entities across different tables. While the field names are not exact matches, they can be joined using a fuzzy join approach to solve the query.
+### Hint: For some queries, you could get needed information from "categories" or "details" columns in books_dataset.

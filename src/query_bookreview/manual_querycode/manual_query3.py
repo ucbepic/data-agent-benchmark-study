@@ -1,0 +1,194 @@
+import pandas as pd
+import mysql.connector
+import sqlite3
+import json
+import os
+from sqlalchemy import create_engine
+from openai import AzureOpenAI
+from dotenv import load_dotenv
+
+# ========== Configuration ========== #
+user = os.getenv("MYSQL_USER", "root")
+mysql_password = os.getenv("MYSQL_PASSWORD", "")
+host = os.getenv("MYSQL_HOST", "localhost")
+port = os.getenv("MYSQL_PORT", "3306")
+mysql_db = "ucb_db"
+mysql_table = "books_info"
+
+client = AzureOpenAI(
+        api_key=os.getenv("AZURE_API_KEY"),
+        api_version=os.getenv("AZURE_API_VERSION", "2023-05-15"),
+        azure_endpoint=os.getenv("AZURE_API_BASE")
+    )
+deployment_name = "gpt-4o-mini"
+
+# ========== Step 1: Load books from MySQL ========== #
+def fetch_books():
+    try:
+        conn = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password=mysql_password,
+            database=mysql_db
+        )
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM {mysql_table}")
+        column_names = [desc[0] for desc in cursor.description]
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(zip(column_names, row)) for row in rows]
+    except Exception as e:
+        print(f"❌ MySQL connection failed: {e}")
+        return []
+
+books = fetch_books()
+print(f"✅ Total {len(books)} books loaded from database.")
+
+# ========== Step 2: Filter books categorized as 'Children's Books' ========== #
+def is_children_book(categories, client, deployment_name):
+    prompt = (
+        "You are given the category field of a book.\n"
+        "Determine if this book belongs to the (Children's Books) category.\n" 
+        f"Categories:\n{categories}\n\n"
+        "If yes, reply only with 'yes'. Otherwise, reply 'no'."
+    )
+    try:
+        response = client.chat.completions.create(
+            model=deployment_name,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that classifies books by category."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.0,
+            max_tokens=5
+        )
+        return response.choices[0].message.content.strip().lower() == "yes"
+    except Exception as e:
+        print(f"❌ GPT error: {e}")
+        return False
+
+qualified_books = []
+
+for i, book in enumerate(books):
+    categories = book.get("categories", "")
+    if not categories.strip():
+        print(f"❌ [{i}] No categories")
+        continue
+
+    is_qualified = is_children_book(categories, client, deployment_name)
+    if is_qualified:
+        qualified_books.append(book)
+        print(f"✅ [{i}] Matched: {book.get('title', 'Untitled')} | {categories}")
+    else:
+        print(f"❌ [{i}] Not matched")
+
+df_children = pd.DataFrame(qualified_books)
+print(f"\n Retained {len(df_children)} books classified as 'Children's Books'.")
+
+# ========== Step 3: Load reviews from SQLite ========== #
+def fetch_reviews():
+    try:
+        conn = sqlite3.connect("../query_dataset/review_query.db")
+        df = pd.read_sql("SELECT * FROM review", conn)
+        conn.close()
+        print(f"\u2705 Loaded {len(df)} reviews")
+        return df
+    except Exception as e:
+        print(f"\u274c SQLite load failed: {e}")
+        return pd.DataFrame()
+
+df_review = fetch_reviews()
+
+# ========== Step 4: Infer purchase_id → book_id rule ========== #
+def get_mapping_rule(book_ids, purchase_ids):
+    prompt = (
+        "You are given two complete ID columns from two different datasets:\n"
+        f"- The first column is `purchase_id`: {json.dumps(purchase_ids, indent=2)}\n"
+        f"- The second column is `book_id`: {json.dumps(book_ids, indent=2)}\n\n"
+        "Each purchase_id corresponds to a book_id, but the mapping rule is not provided.\n"
+        "Determine the mapping relationship between the two sets of IDs.\n"
+        "Please respond with:\n"
+        "1. The exact mapping rule in plain English \n"
+        "2. An explanation of why you think this rule holds."
+    )
+    response = client.chat.completions.create(
+        model=deployment_name,
+        messages=[
+            {"role": "system", "content": "You are a data engineer analyzing two columns of IDs for structural relationships."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.0,
+        max_tokens=500
+    )
+    return response.choices[0].message.content.strip()
+
+book_ids = [b["book_id"] for b in books]
+purchase_ids = df_review["purchase_id"].drop_duplicates().tolist()
+mapping_rule_explanation = get_mapping_rule(book_ids, purchase_ids)
+print("\n\U0001f9e0 GPT-inferred mapping rule:\n")
+print(mapping_rule_explanation)
+
+# ========== Step 5: Apply rule to assign book_id to each review ========== #
+def resolve_purchase_to_book(purchase_id):
+    prompt = (
+        f"The previously inferred mapping rule is:\n\n{mapping_rule_explanation}\n\n"
+        f"Now, based on this rule, please determine the corresponding `book_id` for the following `purchase_id`:\n"
+        f"- purchase_id: {purchase_id}\n\n"
+        "Respond only with the `book_id`, e.g., 'bookid_88'."
+    )
+    try:
+        response = client.chat.completions.create(
+            model=deployment_name,
+            messages=[
+                {"role": "system", "content": "You are a data assistant that maps purchase IDs to book IDs using a known rule."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.0,
+            max_tokens=20
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"\u274c GPT error on {purchase_id}: {e}")
+        return None
+
+predicted_book_ids = []
+for i, row in df_review.iterrows():
+    purchase_id = row["purchase_id"]
+    book_id = resolve_purchase_to_book(purchase_id)
+    predicted_book_ids.append(book_id)
+    print(f"[{i}] purchase_id = {purchase_id} → book_id = {book_id}")
+
+df_review["book_id"] = predicted_book_ids
+
+# ========== Step 6: Filter and aggregate review ratings ========== #
+children_book_ids = set(df_children["book_id"])
+df_children_reviews = df_review[df_review["book_id"].isin(children_book_ids)].copy()
+df_children_reviews["rating"] = pd.to_numeric(df_children_reviews["rating"], errors="coerce")
+df_children_reviews["review_time"] = pd.to_datetime(df_children_reviews["review_time"], errors="coerce")
+
+df_recent = df_children_reviews[
+    (df_children_reviews["review_time"] >= pd.Timestamp("2020-01-01")) &
+    (df_children_reviews["rating"].notnull())
+]
+
+df_result = (
+    df_recent.groupby("book_id")
+    .agg(
+        avg_rating=("rating", "mean"),
+        num_reviews=("rating", "count")
+    )
+    .reset_index()
+)
+# ========== Step 7: Join book metadata and verify ratings ========== #
+df_result = df_result[df_result["avg_rating"] >= 4.5]
+df_result = df_result.merge(
+    df_children[["book_id", "title", "categories"]],
+    on="book_id",
+    how="left"
+)
+
+# ========== Step 8: Print result ========== #
+print(" Children's Books with average rating ≥ 4.5 since 2020:")
+print(df_result[["title", "avg_rating", "num_reviews", "categories"]])
+
+

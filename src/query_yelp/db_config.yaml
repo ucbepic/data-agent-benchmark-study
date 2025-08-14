@@ -1,0 +1,9 @@
+db_clients:
+  businessinfo_dataset:
+    db_type: mongo                # Database type: MongoDB
+    db_name: yelp_db             # Name of the MongoDB database
+    dump_folder: query_dataset/yelp_business  # Folder with the MongoDB dump to initialize
+
+  user_dataset:
+    db_type: duckdb               # Database type: DuckDB
+    db_path: query_dataset/yelp_user.db       # Path to the DuckDB file

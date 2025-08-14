@@ -1,0 +1,26 @@
+You are working with two datasets to solve this query.
+
+Here are the descriptions of these two datasets:
+
+1. **review_dataset** {review_query.db}
+   - This dataset is stored in SQLite database format and contains review information from Google Maps (reviewer name, ratings, text, etc.) collected up to September 2021 in the United States.
+   - Fields:
+     - name (str): Name of the reviewer
+     - time (str): Timestamp of the review
+     - rating (int): Rating given by the reviewer (1-5 scale)
+     - text (str): Review text content
+     - gmap_id (str): Google Maps business identifier
+
+2. **business_dataset** {business_description.sql}
+   - This dataset is stored in PostgreSQL format and contains business metadata from Google Maps (business name, description, hours, etc.) collected up to September 2021 in the United States.
+   - Fields:
+     - name (str): Business name
+     - gmap_id (str): Google Maps business identifier (links to review_dataset)
+     - description (str): Business description
+     - num_of_reviews (int): Total number of reviews for this business
+     - hours (list): Operating hours information
+     - MISC (dict): Additional miscellaneous business information
+     - state (str): Business operating status (e.g., open, closed, temporarily closed) 
+
+### Hint: The two datasets can be joined using the gmap_id field to combine review information with business metadata.
+### Hint: You can get needed information from the "description" column in business_dataset

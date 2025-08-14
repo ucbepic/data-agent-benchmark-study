@@ -1,0 +1,45 @@
+=== Listing Exchange ===
+This field indicates the primary exchange on which the security is listed. Common values:
+
+- A: NYSE American (formerly AMEX, focused on small-cap growth companies)
+- N: New York Stock Exchange (NYSE)
+- P: NYSE Arca (primarily for ETFs and derivatives)
+- Q: NASDAQ Global Select Market (top-tier NASDAQ market)
+- Z: BATS Global Markets (now part of Cboe, tech-driven exchange)
+- Others: May include OTC (Over-the-Counter) or regional exchanges
+
+Semantic hints:
+- "Listed on NASDAQ" → Listing Exchange = Q
+- "Traded on NYSE" → Listing Exchange = N
+- "ETF on Arca" → Listing Exchange = P and ETF = Y
+
+---
+
+=== Market Category ===
+This field applies only to NASDAQ-listed securities (Listing Exchange = Q) and denotes the market tier based on financial strength, liquidity, and governance.
+
+- Q: NASDAQ Global Select Market (highest standards)
+- G: NASDAQ Global Market (mid-tier)
+- S: NASDAQ Capital Market (for smaller companies)
+- (blank): Not applicable or not NASDAQ-listed
+
+Semantic hints:
+- "Global Select Market" → Market Category = Q
+- "Capital Market" → Market Category = S
+- "Mid-cap NASDAQ companies" → Market Category = G
+
+---
+
+=== Financial Status ===
+This field describes the financial compliance status of the security, primarily used for monitoring at-risk listings.
+
+- N: Normal (compliant)
+- D: Delinquent (e.g., late filings)
+- E: Deficient (does not meet listing standards)
+- Q: Bankrupt or in reorganization
+- (blank): Generally indicates normal status
+
+Semantic hints:
+- "Financially stable" → Financial Status = N or blank
+- "Troubled company" → Financial Status in [D, E, Q]
+- "Bankrupt listings" → Financial Status = Q

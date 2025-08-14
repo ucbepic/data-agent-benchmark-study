@@ -1,0 +1,65 @@
+You are working with two datasets to solve this query.
+
+Here are the descriptions of these two datasets:
+
+1. **businessinfo_dataset** {yelp_business.folder}
+   - This dataset is stored in a MongoDB database and contains metadata and user check-in records for Yelp businesses. It captures business attributes, service descriptions, operating hours, and user visit timestamps.
+   - This dataset consists of two tables:
+     - business_table
+       - This table contains metadata for businesses listed on Yelp, including names, identifiers, operational status, attributes, business hours, and service/location descriptions.
+       - Fields:
+         - business_id (str): Unique business identifier
+         - name (str): Business name
+         - review_count (int): Total number of reviews
+         - is_open (int): Whether business is currently open (1=open, 0=closed)
+         - attributes (dict or null): Business attributes (parking, WiFi, etc.)
+         - hours (dict or null): Operating hours
+         - description (str): Business description including location information
+
+     - checkin_table
+       - This table records the check-in behavior of Yelp users at various businesses, capturing the timestamped log of user presence.
+       - Fields:
+         - business_id (str): Business identifier linking to business_table
+         - date (list of str): List of check-in timestamps
+
+2. **user_dataset** {yelp_user.db}
+   - This dataset is stored in a DuckDB database and contains user profiles and user-generated content from Yelp, including written reviews, tips, and engagement statistics such as review counts, votes, and elite status.
+   - This dataset consists of three tables:
+     - review_table
+       - This table contains user-generated reviews of businesses on Yelp, including rating scores, review content, and metadata such as user and business reference identifiers.
+       - Fields:
+         - review_id (str): Unique review identifier
+         - user_id (str or null): User identifier
+         - business_ref (str): Business identifier linking to business_table
+         - rating (int): Rating score (1-5)
+         - useful (int): Useful votes received
+         - funny (int): Funny votes received
+         - cool (int): Cool votes received
+         - text (str): Review text content
+         - date (str): Review date
+
+     - tip_table
+       - This table contains short user tips about Yelp businesses, usually concise suggestions or comments, along with optional compliments and timestamps.
+       - Fields:
+         - user_id (str or null): User identifier
+         - business_ref (str): Business identifier linking to business_table
+         - text (str): Tip text content
+         - date (str): Tip date
+         - compliment_count (int): Number of compliments received
+
+     - user_table
+       - This table contains user profile information from Yelp, including activity statistics and membership history.
+       - Fields:
+         - user_id (str): Unique user identifier
+         - name (str): User name
+         - review_count (int): Total reviews written by user
+         - yelping_since (str): Registration date
+         - useful (int): Total useful votes received
+         - funny (int): Total funny votes received
+         - cool (int): Total cool votes received
+         - elite (str): Elite status years
+
+### Hint: The business_id field in the business_table corresponds to the business_ref field in both the review_table and tip_table. While the field names are not exact matches, they can be joined using a fuzzy join approach to enable cross-dataset queries.
+### Hint: The datasets contain five tables total. Carefully identify which tables and columns contain the information required to answer the query.
+### Hint: The business_table "description" column includes location information if needed.
+### Hint: The business_table "attributes" column includes services information if needed.

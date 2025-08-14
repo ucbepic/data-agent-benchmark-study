@@ -1,0 +1,21 @@
+You are working with two datasets to solve this query.
+
+Here are the descriptions of these two datasets:
+
+1. **indexinfo_dataset** {indexInfo_query.db}
+   - This dataset is stored in a SQLite database and contains metadata about stock market indices from major exchanges around the world, including the United States, China, Canada, Germany, Japan, and more.
+   - Fields:
+     - Exchange (str): Full name of the stock exchange
+     - Currency (str): Trading currency of the exchange
+
+2. **indextrade_dataset** {indexTrade_query.db}
+   - This dataset is stored in a DuckDB database and contains daily price data for indices tracking stock exchanges across various countries and regions.
+   - Fields:
+     - Index (str): Abbreviated index symbol
+     - Date (str): Trading date
+     - Open (float): Opening price
+     - High (float): Highest price during the day
+     - Low (float): Lowest price during the day
+     - Close (float): Closing price
+     - Adj Close (float): Adjusted closing price
+     - CloseUSD (float): Closing price in USD
