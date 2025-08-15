@@ -7,16 +7,16 @@ Each section explains **what the category covers**, **why it’s specifically ha
 
 ---
 
-## 1) Single-Source Structured Analytics (basic → complex)
+## 1) Single-Source Structured Analytics
 
 **What it covers**  
 Natural-language to SQL over a single database: filters, joins within one schema, aggregations, window functions, ranking, and date logic.
 
 **Why it’s hard for LLMs**  
-- Infers schema and join keys from names; fragile with cryptic columns.  
-- Off-by-one errors in time filters, window frames, or ranking ties.  
-- NULL semantics, distinct vs non-distinct, and semi-additive measures frequently misapplied.  
-- Tends to generate non-optimal queries (Cartesian joins, unneeded CTEs).
+- Inferring schema and join keys from naming alone is brittle with cryptic columns.  
+- Off-by-one errors in time filters, window frames, or tie handling are common.  
+- NULL semantics, distinct vs non-distinct, and semi-additive measures are often misapplied.  
+- Generated queries may be correct but inefficient (Cartesian joins, unneeded CTEs).
 
 **Representative prompts**  
 1. “Within our Postgres warehouse, show me the top ten creators by total watch time for last week, breaking ties with total views.”  
@@ -33,9 +33,9 @@ Combining heterogeneous sources (e.g., Postgres, MySQL, SQL Server, MongoDB, Sal
 
 **Why it’s hard for LLMs**  
 - Different SQL dialects and data models (row vs document) require different query plans.  
-- Must minimize data movement and push down filters; naive plans explode costs/latency.  
-- Identity stitching requires consistent keys and precedence rules across systems.  
-- Eventual consistency: results differ by freshness unless the plan explicitly handles it.
+- Must minimize data movement and push down predicates; naive plans explode cost/latency.  
+- Identity stitching needs explicit keys and precedence rules across systems.  
+- Eventual consistency: results vary by freshness unless the plan handles it.
 
 **Representative prompts**  
 1. “Using Salesforce opportunities and Snowflake shipped revenue, compare pipeline value to recognized revenue for the last fiscal quarter.”  
@@ -45,15 +45,15 @@ Combining heterogeneous sources (e.g., Postgres, MySQL, SQL Server, MongoDB, Sal
 
 ---
 
-## 3) Semantic / Unstructured → Structured (deterministic intermediates)
+## 3) Integrating Unstructured Data (extracting structured information)
 
 **What it covers**  
 Extracting structure from text (or other unstructured inputs) via NLP/LLMs, **persisting** the derived labels/scores, then performing standard SQL analysis.
 
-**Why it’s hard for LLLMs**  
+**Why it’s hard for LLMs**  
 - Stochastic outputs need thresholds and persistence to be reproducible; “memory” is not acceptable.  
 - Label drift and ambiguous categories require documented definitions and rerunnable pipelines.  
-- Must surface precision/recall trade-offs and error rates in downstream aggregations.
+- Downstream aggregations must surface precision/recall trade-offs and error rates.
 
 **Representative prompts**  
 1. “Identify businesses that are massage therapists from their descriptions and then list those with an average rating of at least 4.0, including the computed averages.”  
@@ -63,15 +63,15 @@ Extracting structure from text (or other unstructured inputs) via NLP/LLMs, **pe
 
 ---
 
-## 4) Orchestrated Pipelines (loops, conditionals, fan-out/fan-in) at scale
+## 4) Production-Grade Control Flow
 
 **What it covers**  
-Multi-step workflows that require iteration, branching, retries, chunking, parallelization, and robust error handling; often across large datasets.
+Multi-step workflows that require iteration, branching, retries, chunking, parallelization, checkpointing, and robust error handling—often across large datasets.
 
 **Why it’s hard for LLMs**  
-- Requires **planning + execution** beyond a single query; pure prompting is insufficient.  
-- Idempotency, checkpointing, and partial failure recovery must be explicit.  
-- Memory and context windows are irrelevant; compute must be pushed to the right engines.
+- Requires **planning plus execution** beyond a single query; prompting alone is insufficient.  
+- Idempotency and partial-failure recovery must be explicit and testable.  
+- Memory/context windows are irrelevant; compute must be pushed to the right engines.
 
 **Representative prompts**  
 1. “Find the top 100 customers by product usage in the past three months, fetch all of their support tickets, score the ticket sentiment, and return the customers at highest churn risk.”  
@@ -81,7 +81,7 @@ Multi-step workflows that require iteration, branching, retries, chunking, paral
 
 ---
 
-## 5) Business Term Disambiguation (with hints / tribal metadata)
+## 5) Business Term Disambiguation
 
 **What it covers**  
 Applying canonical business definitions and assumptions to ambiguous terms (e.g., “active user”, “new customer”, “revenue”, “churn”).
@@ -99,14 +99,14 @@ Applying canonical business definitions and assumptions to ambiguous terms (e.g.
 
 ---
 
-## 6) Temporal, Unit & Currency-Aware Business Metrics (incl. SCD)
+## 6) Temporal, Unit & Currency-Aware Business Metrics (including SCD)
 
 **What it covers**  
 Point-in-time analysis (SCD2), FX conversion at transaction timestamps, mixed units/timezones, and complex KPI calculations across changing dimensions.
 
 **Why it’s hard for LLMs**  
 - As-of joins over valid-from/to boundaries are easy to get wrong.  
-- FX/units/timezones require correct reference tables and business calendars (e.g., week definitions, fiscal periods).  
+- FX/units/timezones require correct reference tables and business calendars.  
 - Semi-additive measures (e.g., inventory level) require special aggregation logic.
 
 **Representative prompts**  
@@ -124,8 +124,8 @@ De-duplicating entities across systems, defining survivorship rules, and selecti
 
 **Why it’s hard for LLMs**  
 - Fuzzy matching and conflicting attributes require transparent rule-based resolution.  
-- Picking the “golden record” demands lineage and justification, not heuristics hidden in a prompt.  
-- Freshness vs completeness trade-offs must be explicit and repeatable.
+- Selecting the “golden record” demands lineage and justification, not hidden heuristics.  
+- Freshness vs completeness trade-offs must be explicit and reproducible.
 
 **Representative prompts**  
 1. “Provide a unique customer count by segment after merging duplicates across Salesforce and our billing database using email and domain rules.”  
@@ -143,7 +143,7 @@ Event sequences over time: cohorting, retention, conversion funnels, attribution
 **Why it’s hard for LLMs**  
 - Sessionization rules and attribution windows are subtle and domain-specific.  
 - Late-arriving events and timezone boundaries easily corrupt metrics.  
-- Requires consistent cohort definitions and reusability across runs.
+- Requires consistent cohort definitions that can be rerun exactly.
 
 **Representative prompts**  
 1. “Build a signup → activation → paid funnel by acquisition channel for the last 28 days and report conversion rates at each step.”  
@@ -153,49 +153,31 @@ Event sequences over time: cohorting, retention, conversion funnels, attribution
 
 ---
 
-## 9) Geospatial & Location-Aware Analysis
+## 9) External APIs, SaaS, and Open-Web Fusion
 
 **What it covers**  
-Spatial joins and filters, distance calculations, buffers, intersections, and working with geographic boundaries and projections.
+Ingesting and joining external API/SaaS data **and** open-web content with internal facts while respecting pagination, rate limits, retries, schema drift, robots/ToS, and caching.
 
 **Why it’s hard for LLMs**  
-- Geodesic vs planar distances, CRS conversions, and unit consistency require explicit handling.  
-- Large spatial joins need indexing and careful predicate pushdown.  
-- Boundary edge cases (on the line/within buffers) must be defined and tested.
-
-**Representative prompts**  
-1. “List orders delivered more than ten kilometers from the nearest distribution center and include the delivery times.”  
-2. “Identify rides that began within two hundred meters of a rail station during weekday peak hours.”  
-3. “Find stores with overlapping five-kilometer trade areas and estimate cannibalization risk by overlap size.”  
-4. “Compute average delivery distance by city boundary rather than ZIP code for last month.”
-
----
-
-## 10) External APIs & SaaS Fusion (with quotas / partial data)
-
-**What it covers**  
-Ingesting and joining external API/SaaS data with internal facts while respecting pagination, rate limits, retries, and schema drift.
-
-**Why it’s hard for LLMs**  
-- Needs idempotent ingestion, backoff strategies, and checkpointing—not just API calls in prose.  
-- Partial/incomplete responses must be detected and reconciled before analysis.  
-- Schemas and semantics often drift; the plan must validate and adapt.
+- Requires idempotent ingestion, backoff strategies, and checkpointing—not just API calls in prose.  
+- Partial or inconsistent responses must be detected and reconciled before analysis.  
+- Open-web content varies in structure/quality; deduping, source attribution, and legal constraints apply.
 
 **Representative prompts**  
 1. “For the top twenty internal services, retrieve open GitHub issues and join them with service usage to rank the most impacted services.”  
 2. “Combine Zendesk SLA metrics with our Snowflake account tiers to report median first response time by tier for last quarter.”  
 3. “Pull the latest FX rates from the API and recompute today’s multi-currency revenue totals, caching responses to respect rate limits.”  
-4. “Fetch marketing campaign stats from the ad platform API and align them with our internal conversions to compute cost per acquisition by campaign.”
+4. “From the vendor’s public status page on the open web, detect incident windows and correlate them with our support ticket volume by hour.”
 
 ---
 
-## 11) Governance, Compliance & Document-Grounded Rules
+## 10) Governance, Compliance & Document-Grounded Rules
 
 **What it covers**  
 Policy-aware analytics: enforcing row-level security (RLS), masking PII/PHI, extracting rules from policy/contract documents, and **citing** the applied rules.
 
 **Why it’s hard for LLMs**  
-- Policies must be executed, not summarized; leakage at row level is unacceptable.  
+- Policies must be **executed**, not summarized; row-level leakage is unacceptable.  
 - Document versions and clause references require deterministic extraction and citation.  
 - Minimum-k aggregation thresholds and redaction rules need coded safeguards.
 
@@ -207,7 +189,7 @@ Policy-aware analytics: enforcing row-level security (RLS), masking PII/PHI, ext
 
 ---
 
-## 12) Advanced Analytics: Statistical & Graph / Network
+## 11) Advanced Analytics: Statistical and Graph/Network
 
 **What it covers**  
 Statistical testing and distribution analysis (A/B tests, confidence intervals, control limits) and graph analytics (paths, centrality, community detection).
@@ -215,13 +197,32 @@ Statistical testing and distribution analysis (A/B tests, confidence intervals, 
 **Why it’s hard for LLMs**  
 - Must choose appropriate tests, validate assumptions, and report uncertainty (CIs/p-values).  
 - Multiple comparisons and guardrails are often ignored without explicit requirements.  
-- Graph traversal at scale needs efficient algorithms and cycle handling; naive SQL recursions can be exponential.
+- Graph traversal at scale needs efficient algorithms and cycle handling; naive SQL recursion can explode.
 
 **Representative prompts**  
 1. “Evaluate our A/B test by calculating lift, confidence intervals, and the p-value for the primary conversion metric.”  
 2. “Identify transaction chains that connect flagged accounts within five hops and list the chains with the fewest intermediate accounts.”  
 3. “Compute the PageRank of users in our referral network and return the top twenty influencers.”  
-4. “Estimate the defect rate control limits for our manufacturing line using three standard deviations from the historical mean.”
+4. “Estimate the defect-rate control limits for our manufacturing line using three standard deviations from the historical mean.”
+
+---
+
+## 12) Implicit Relationship Discovery
+
+**What it covers**  
+Inferring and validating relationships when explicit keys or well-defined join paths do not exist or are ambiguous. Includes fuzzy matching, key derivation, runtime join selection, and data-driven path discovery.
+
+**Why it’s hard for LLMs**  
+- Ambiguous or missing keys require similarity scoring, deterministic tie-breakers, and provenance.  
+- Multiple valid join paths demand criteria for selection (freshness, completeness, business rules).  
+- Join logic may depend on data content discovered at runtime (e.g., co-occurrence, time/space proximity).  
+- Probabilistic matches must expose confidence scores and allow human review.
+
+**Representative prompts**  
+1. “Join our clickstream events to CRM accounts when only email domains or referrer URLs are available, and report weekly active accounts with the matching confidence for each row.”  
+2. “From warehouse scanner logs and ERP movements, reconstruct shipment chains that link pallets to orders when labels were reused, using time proximity and location co-occurrence, and list any ambiguous chains for review.”  
+3. “Create a unified catalog by matching products between our ecommerce site and ERP when SKU formats differ, using name similarity and attribute overlap, and specify the tie-breaking rule you applied.”  
+4. “Detect which support tickets in Zendesk refer to the same underlying incident as Jira issues by comparing entities, timestamps, and description similarity, and return matched pairs with confidence scores and rationales.”
 
 ---
 
@@ -230,5 +231,5 @@ Statistical testing and distribution analysis (A/B tests, confidence intervals, 
 - Keep prompts **self-contained**: name data sources (DBs/tables/APIs) or state assumptions in the sentence.  
 - Prefer **time-bounded** queries (“last 30 days”, “Q1 2024”) for repeatability.  
 - When ambiguity exists, **state the intended definition** (e.g., “active = logged-in minutes”).  
+- For open-web prompts, indicate the target site(s) and any constraints (e.g., public status page, RSS).  
 - Avoid toy-only prompts; aim for tasks representative of real enterprise data and policies.
-
