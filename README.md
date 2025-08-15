@@ -17,20 +17,20 @@ This project defines **categories of realistic enterprise questions**, along wit
 
 ## Benchmark Categories
 
-Our benchmark plans to covere 12 categories of enterprise data analysis challenges so far:
+Our benchmark covers 12 categories of enterprise data analysis challenges:
 
-1. **Single-Source Structured Analytics**: Basic to complex SQL queries with joins, window functions, and ranking operations.
-2. **Cross-Source Federation & Stitching**: Integrating heterogeneous systems and reconciling schemas across multiple data sources.
-3. **Semantic/Unstructured → Structured**: Using LLM/NLP to classify/extract data, then persisting results for SQL analysis.
-4. **Orchestrated Pipelines**: Complex workflows with loops, conditionals, and fan-out/fan-in operations at scale.
-5. **Business Term Disambiguation**: Applying provided definitions and surfacing assumptions for ambiguous business terms.
-6. **Temporal, Unit & Currency-Aware Metrics**: Handling SCD2 queries, foreign exchange, and complex time-based calculations.
-7. **Entity Resolution & Source-of-Truth Arbitration**: Deduplication across systems and choosing authoritative sources.
-8. **Time-Series, Cohorts & Funnels**: Event sequences, retention analysis, and conversion funnel tracking.
-9. **Geospatial & Location-Aware Analysis**: Spatial joins, distance calculations, and location-based insights.
-10. **External APIs & SaaS Fusion**: Integrating third-party APIs with rate limits, pagination, and partial data.
-11. **Governance, Compliance & Document-Grounded Rules**: Enforcing RLS/PII policies and extracting rules from documents.
-12. **Advanced Analytics: Statistical & Graph/Network**: Significance testing, distributions, and graph traversal algorithms.
+1. **Single-Source Structured Analytics**: Natural-language to SQL over a single database with filters, joins, aggregations, window functions, ranking, and date logic.
+2. **Cross-Source Federation & Stitching**: Combining heterogeneous sources (Postgres, MySQL, SQL Server, MongoDB, Salesforce, Zendesk) into one answer while reconciling schemas and types.
+3. **Integrating Unstructured Data**: Extracting structure from text via NLP/LLMs, persisting derived labels/scores, then performing standard SQL analysis.
+4. **Production-Grade Control Flow**: Multi-step workflows requiring iteration, branching, retries, chunking, parallelization, checkpointing, and robust error handling.
+5. **Business Term Disambiguation**: Applying canonical business definitions and assumptions to ambiguous terms (e.g., "active user", "new customer", "revenue", "churn").
+6. **Temporal, Unit & Currency-Aware Business Metrics**: Point-in-time analysis (SCD2), FX conversion at transaction timestamps, mixed units/timezones, and complex KPI calculations.
+7. **Entity Resolution & Source-of-Truth Arbitration**: De-duplicating entities across systems, defining survivorship rules, and selecting authoritative sources.
+8. **Time-Series, Cohorts & Funnels**: Event sequences over time including cohorting, retention, conversion funnels, attribution windows, and seasonality.
+9. **External APIs, SaaS, and Open-Web Fusion**: Ingesting and joining external API/SaaS data and open-web content with internal facts while respecting pagination, rate limits, and caching.
+10. **Governance, Compliance & Document-Grounded Rules**: Policy-aware analytics enforcing row-level security, masking PII/PHI, and extracting rules from policy documents.
+11. **Advanced Analytics: Statistical and Graph/Network**: Statistical testing, distribution analysis, and graph analytics including paths, centrality, and community detection.
+12. **Implicit Relationship Discovery**: Inferring and validating relationships when explicit keys or well-defined join paths don't exist, including fuzzy matching and data-driven path discovery.
 
 ---
 
@@ -87,7 +87,7 @@ The `src/` directory contains the current UCB implementation, which is still und
 - **Understanding real-world failures** of current AI/data tools
 - **Building reliable solutions** based on practitioner feedback
 
-**Current Progress:** We have made progress on the first three categories (Single-Source Structured Analytics, Cross-Source Federation & Stitching, and Semantic/Unstructured → Structured) as seen in the query datasets in `src/`. However, we still want your contributions to improve these categories and expand into the remaining nine.
+**Current Progress:** We have made progress on several categories as seen in the query datasets in `src/`. However, we still want your contributions to improve these categories and expand into the remaining ones.
 
 **We're primarily seeking contributions on:**
 - **Real-world problems** you've encountered with AI/data tools
