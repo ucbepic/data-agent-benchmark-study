@@ -1,36 +1,89 @@
-# UCB Query Benchmark
+# UCB Query Benchmark: Real Enterprise Data Problems for AI
 
-A community-driven benchmark for evaluating **AI Data Analysts**—systems that answer questions in natural language and deterministically plan/execute analysis across enterprise data (SQL/NoSQL, SaaS APIs, documents, the open web).
+A community-driven benchmark to understand **why AI fails on real enterprise data problems** and **which techniques actually work**.
 
-This project defines **categories of realistic enterprise questions**, along with **specs for reproducible tasks** (schemas, inputs, expected outputs, and scoring) so we can compare AI agents to a strong human analyst baseline. Developed in partnership between UC Berkeley (EPIC Data Lab) and PromptQL, this benchmark aims to understand why current AI/data tools fail in real enterprise scenarios.
+This is a partnership between UC Berkeley (EPIC Data Lab) and PromptQL to create the first benchmark that:
+- **Documents real failures** of AI tools in enterprise settings
+- **Tests multiple techniques** (RAG, Agents, Text-to-SQL, etc.) against the same problems  
+- **Measures what works** with deterministic, reproducible evaluations
 
-> 🧭 Start with [`CATEGORIES.md`](./CATEGORIES.md) to see the taxonomy and propose prompts and tasks.
+> 🎯 **We need your help:** Share the data problems where AI tools failed you, and help us test solutions that might actually work.
 
 ---
 
-## Goals
+## The Problem
 
-- **Realistic**: Mirror messy, multi-source, policy-aware enterprise scenarios.
-- **Deterministic**: Require persisted intermediates and reproducible plans.
-- **Measurable**: Provide gold outputs, tolerances, and clear scoring rules.
-- **Extensible**: Easy to add new categories, tasks, and datasets.
+Every enterprise is trying to use AI for data analysis. They're using Cursor for SQL, Claude with MCP servers, ChatGPT with Code Interpreter, and countless other tools. **And they're all hitting the same walls.**
 
-## Benchmark Categories
+We've seen the same story repeatedly:
+- The demo works perfectly on clean, single-table data
+- It breaks immediately on real enterprise data with multiple sources, ambiguous schemas, and business logic
+- No one knows which technique (RAG, Agents, Fine-tuning) would actually solve their problem
 
-Our benchmark covers 12 categories of enterprise data analysis challenges:
+**This benchmark aims to:**
+1. Collect real enterprise data problems where current AI tools fail
+2. Test different AI techniques against these problems systematically  
+3. Provide clear evidence of what works, what doesn't, and why
 
-1. **Single-Source Structured Analytics**: Natural-language to SQL over a single database with filters, joins, aggregations, window functions, ranking, and date logic.
-2. **Cross-Source Federation & Stitching**: Combining heterogeneous sources (Postgres, MySQL, SQL Server, MongoDB, Salesforce, Zendesk) into one answer while reconciling schemas and types.
-3. **Integrating Unstructured Data**: Extracting structure from text via NLP/LLMs, persisting derived labels/scores, then performing standard SQL analysis.
-4. **Production-Grade Control Flow**: Multi-step workflows requiring iteration, branching, retries, chunking, parallelization, checkpointing, and robust error handling.
-5. **Business Term Disambiguation**: Applying canonical business definitions and assumptions to ambiguous terms (e.g., "active user", "new customer", "revenue", "churn").
-6. **Temporal, Unit & Currency-Aware Business Metrics**: Point-in-time analysis (SCD2), FX conversion at transaction timestamps, mixed units/timezones, and complex KPI calculations.
-7. **Entity Resolution & Source-of-Truth Arbitration**: De-duplicating entities across systems, defining survivorship rules, and selecting authoritative sources.
-8. **Time-Series, Cohorts & Funnels**: Event sequences over time including cohorting, retention, conversion funnels, attribution windows, and seasonality.
-9. **External APIs, SaaS, and Open-Web Fusion**: Ingesting and joining external API/SaaS data and open-web content with internal facts while respecting pagination, rate limits, and caching.
-10. **Governance, Compliance & Document-Grounded Rules**: Policy-aware analytics enforcing row-level security, masking PII/PHI, and extracting rules from policy documents.
-11. **Advanced Analytics: Statistical and Graph/Network**: Statistical testing, distribution analysis, and graph analytics including paths, centrality, and community detection.
-12. **Implicit Relationship Discovery**: Inferring and validating relationships when explicit keys or well-defined join paths don't exist, including fuzzy matching and data-driven path discovery.
+---
+
+## How to Contribute
+
+### 1. Share Your Real-World Problems
+**We want to hear about your failures.** 
+
+Edit [`EXAMPLES.md`](./EXAMPLES.md) to add:
+- **The problem you tried to solve** (be specific about data sources, complexity)
+- **What tools/approaches you tried** (Claude, GPT-4, Cursor, custom agents)
+- **Exactly how they failed** (wrong results, timeouts, hallucinations)
+- **Your hypothesis** for why they failed
+- **What a working solution would need** to handle
+
+Example contribution:
+```markdown
+**Problem:** "Show me customers at risk of churning by combining Salesforce opportunity data with product usage logs"
+**What failed:** Claude with database MCP server
+**How it failed:** Couldn't handle the date misalignment between systems, generated SQL with wrong join keys
+**Why:** No understanding that Salesforce uses fiscal quarters while usage logs use calendar months
+**Solution needs:** Temporal alignment logic, business calendar awareness
+```
+
+### 2. Propose Techniques to Test
+Have an idea for an approach that might work better? Add it to the techniques list:
+- Tool Calling with structured schemas
+- Multi-agent systems with specialized roles
+- Graph RAG over enterprise data
+- Semantic layer + LLM
+- Your novel approach
+
+### 3. Run Evaluations
+Help us test techniques against our problem set:
+1. Pick a technique from `techniques/`
+2. Run it against problems in `EXAMPLES.md`
+3. Report results with full traces
+4. Document what worked and what didn't
+
+---
+
+## Techniques Under Test
+
+We're systematically testing these approaches against real enterprise problems:
+
+| Technique | Description | Status |
+|-----------|-------------|---------|
+| `techniques/tool-calling/` | Function calling with database tools | 🟡 In Progress |
+| `techniques/text-to-sql/` | Direct natural language to SQL | 🟡 In Progress |
+| `techniques/langgraph-agent/` | Multi-step planning with LangGraph | 🔴 Planned |
+| `techniques/rag-on-data/` | RAG over database schemas and docs | 🔴 Planned |
+| `techniques/graph-rag/` | Graph-based RAG for relationships | 🔴 Planned |
+| `techniques/semantic-layer/` | Business logic layer + LLM | 🔴 Planned |
+| `techniques/custom/` | Novel approaches from contributors | 🔵 Open for PRs |
+
+Each technique folder contains:
+- `ARCHITECTURE.md` - How the technique works
+- `implementation/` - Runnable code
+- `results/` - Evaluation results on benchmark problems
+- `analysis.md` - What worked, what didn't, and why
 
 ---
 
@@ -38,69 +91,128 @@ Our benchmark covers 12 categories of enterprise data analysis challenges:
 
 ```
 .
-├─ CATEGORIES.md                 # Category descriptions + example prompts
-├─ src/                          # Current UCB implementation (in development)
-│  ├─ common_scaffold/           # Core framework and utilities
-│  ├─ query_*/                   # Individual benchmark datasets
-│  └─ requirements.txt           # Python dependencies
+├── README.md                    # This file
+├── EXAMPLES.md                  # Real enterprise problems and failures
+├── techniques/                  # Approaches being tested
+│   ├── tool-calling/           
+│   │   ├── ARCHITECTURE.md     # How tool calling works
+│   │   ├── implementation/     # Runnable code
+│   │   └── results/            # Evaluation results
+│   ├── text-to-sql/
+│   ├── langgraph-agent/
+│   └── ...
+├── src/                         # Evaluation framework (in development)
+│   ├── common_scaffold/         # Core utilities
+│   ├── query_*/                 # Test datasets
+│   └── requirements.txt        
+└── evaluations/                 # Results and analysis
+    └── comparison.md            # Cross-technique comparison
 ```
 
 ---
 
-## Contributing
+## What Makes This Different
 
-We want to hear from **practitioners building AI/data systems** about their real-world challenges. Have you tried Cursor to write SQL, or Claude with database MCP servers, only to find they don't work reliably in production? We want to understand:
+**Not another leaderboard.** We're not ranking models on clean datasets. We're:
+- Documenting **specific failure modes** in production
+- Testing **complete techniques** (not just models)
+- Providing **detailed failure analysis** (not just scores)
+- Building **reproducible solutions** (not just benchmarks)
 
-- **What specific problems** are you trying to solve?
-- **Where do current tools fail** and why?
-- **What would a reliable solution** look like for your use case?
+**Real problems, not toy examples.** Every problem in this benchmark:
+- Comes from an actual enterprise use case
+- Has documented failure cases with current tools
+- Requires production-grade handling (errors, scale, governance)
 
-### Share Your Real-World Problems
-- **Describe the scenario** you're trying to solve
-- **Document the failures** you've encountered
-- **Explain your hypothesis** for why current tools don't work
-- **Suggest what a better solution** would need to handle
-
-### Improve the Benchmark
-- Edit [`CATEGORIES.md`](./CATEGORIES.md) to add new categories or prompts
-- Keep it concise: *What it tests*, *Why it's hard*, and **full-sentence prompts** that a business user might actually ask
-- Submit a PR with a descriptive title (e.g., `docs: add geo prompts to #9`)
-
----
-
-## Quality Bar (PR Checklist)
-
-* [ ] **Real-world**: Describe actual problems you've encountered in production.
-* [ ] **Specific**: Include concrete examples of where current tools fail.
-* [ ] **Hypothesis**: Explain your theory for why the failure occurs.
-* [ ] **Actionable**: Suggest what a better solution would need to handle.
-* [ ] **Clarity**: Use clear, specific language that other practitioners can understand.
+**Techniques, not just prompts.** We test:
+- Complete architectures (agents, RAG, tools)
+- Error handling and recovery strategies
+- Performance at scale
+- Deterministic, reproducible approaches
 
 ---
 
 ## Current Status
 
-The `src/` directory contains the current UCB implementation, which is still under development. The team is working on:
+**✅ Completed:**
+- Initial problem collection from enterprise partners
+- Basic evaluation framework
+- First 5 test datasets (GoogleLocal, BookReview, Yelp, StockIndex, StockMarket)
 
-- **Framework improvements** for better agent evaluation
-- **Additional datasets** across the 12 categories
-- **Understanding real-world failures** of current AI/data tools
-- **Building reliable solutions** based on practitioner feedback
+**🟡 In Progress:**
+- Expanding problem documentation with failure analysis
+- Implementing technique comparison framework
+- Testing initial techniques (tool-calling, text-to-sql)
 
-**Current Progress:** We have made progress on several categories as seen in the query datasets in `src/`. However, we still want your contributions to improve these categories and expand into the remaining ones.
+**🔴 Need Help With:**
+- **More real-world failures** - What broke for you?
+- **Novel techniques** - What might work better?
+- **Evaluation runs** - Help test techniques at scale
+- **Failure analysis** - Why exactly do these tools fail?
 
-**We're primarily seeking contributions on:**
-- **Real-world problems** you've encountered with AI/data tools
-- **Failure analysis** of why current solutions don't work
-- **Category refinements** and new prompt examples
-- **Domain expertise** for realistic enterprise scenarios
+---
+
+## Getting Started
+
+### For Problem Contributors
+1. Read [`EXAMPLES.md`](./EXAMPLES.md) to see existing problems
+2. Add your own failures and hypotheses
+3. Submit a PR with title like `examples: add Salesforce-MongoDB join failures`
+
+### For Technique Contributors  
+1. Check `techniques/` for existing approaches
+2. Propose new techniques with an `ARCHITECTURE.md`
+3. Implement and test against problems in `EXAMPLES.md`
+4. Submit results with full traces
+
+### For Evaluators
+1. Set up the environment:
+   ```bash
+   git clone <repo>
+   cd ucb-query-benchmark
+   pip install -r src/requirements.txt
+   ```
+2. Pick a technique and problem set
+3. Run evaluations and document results
+4. Share findings in `evaluations/`
+
+---
+
+## Quality Bar
+
+**For Problem Contributions:**
+- [ ] Based on real enterprise scenario you've encountered
+- [ ] Includes specific tools/approaches that failed
+- [ ] Documents the exact failure mode
+- [ ] Provides hypothesis for root cause
+- [ ] Describes what a solution would need
+
+**For Technique Contributions:**
+- [ ] Clear architecture documentation
+- [ ] Runnable implementation
+- [ ] Handles real enterprise complexity
+- [ ] Deterministic and reproducible
+- [ ] Includes failure recovery strategy
+
+---
+
+## Join the Discussion
+
+- **Discord**: [Join our server](#) for real-time discussion
+- **Issues**: Report bugs or propose enhancements
+- **Discussions**: Share experiences and hypotheses
 
 ---
 
 ## License
 
-MIT for code & specs. Data files may carry their own licenses—include notices where applicable.
+MIT License for code and specifications. Individual datasets may have their own licenses.
 
-## Code of Conduct
+## Acknowledgments
 
-Be respectful. Assume good faith. Prefer constructive, reproducible critique.
+This benchmark is a collaboration between:
+- **UC Berkeley EPIC Data Lab** - Academic research on data systems
+- **PromptQL** - Enterprise data intelligence platform
+- **You** - The practitioners dealing with these problems daily
+
+We especially thank the enterprises who shared their failures and helped us understand why AI tools break in production.
