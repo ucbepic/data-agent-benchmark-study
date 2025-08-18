@@ -2,7 +2,7 @@
 
 **AI fails at enterprise data analysis. We're building a benchmark to fix this.**
 
-A collaboration between [UC Berkeley EPIC Data Lab](https://epic.berkeley.edu) (Prof. Aditya Parameswaran) and [PromptQL](https://promptql.com) to create the first benchmark that measures what actually works for AI-powered data analysis.
+A collaboration between [UC Berkeley EPIC Data Lab](https://epic.berkeley.edu) (Prof. Aditya Parameswaran) and [PromptQL](https://promptql.io) to create the first benchmark that measures what actually works for AI-powered data analysis.
 
 ## Who This Is For
 
