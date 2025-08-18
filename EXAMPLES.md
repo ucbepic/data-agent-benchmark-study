@@ -1,309 +1,104 @@
-# Real Enterprise Data Problems Where AI Fails
+# Problem Examples
 
-This document collects **actual problems** that practitioners have tried to solve with AI tools, **how those tools failed**, and **what might work better**.
+Real data problems where AI tools failed. These help us build better benchmarks.
 
-> 📝 **How to contribute:** Add your real-world failures below. Include the specific tools you tried, exactly how they failed, and your hypothesis for why. Keep examples concrete and based on actual experience.
+## How to Read These
 
----
+Each example shows:
+- **Problem**: What someone tried to do
+- **Tool**: What they used
+- **Failure**: Exactly what went wrong
+- **Why**: Root cause (if known)
 
-## Problem Areas
+## Example Problems
 
-We've identified 12 common areas where AI consistently fails on enterprise data. For each, we document real failures and patterns.
+### SQL Generation Failures
 
-### 1. Single-Source SQL Generation
+**Problem**: "Show me top customers by revenue last quarter"  
+**Tool**: Claude with database schema  
+**Failure**: Used calendar quarter instead of fiscal quarter, ignored currency conversion  
+**Why**: No business context about fiscal calendars or multi-currency setup
 
-**The Promise:** "Just describe what you want in English and AI will write the SQL"
+**Problem**: "Find customers who haven't ordered in 90 days"  
+**Tool**: GPT-4 text-to-SQL  
+**Failure**: Included test accounts and cancelled orders  
+**Why**: No knowledge of data quality rules
 
-**Reality Check:**
-- **Problem tried:** "Show me top 10 customers by revenue last quarter"
-- **Tool used:** Claude with database schema  
-- **How it failed:** Generated SQL with wrong fiscal quarter calculation, didn't handle partial months correctly
-- **Root cause:** No understanding of business calendars, fiscal years vs calendar years
-- **Also failed on:** Window functions with complex frames, handling NULLs in aggregations, tie-breaking in rankings
+### Multi-Database Queries
 
-**What practitioners report:**
-> "GPT-4 writes syntactically correct SQL that's semantically wrong. It doesn't understand our week starts on Sunday, that 'revenue' means recognized not booked, or that we exclude test accounts."
+**Problem**: "Match Salesforce opportunities to Stripe payments"  
+**Tool**: LangChain agent with SQL tools  
+**Failure**: Pulled entire tables into memory, crashed on 10M rows  
+**Why**: No query optimization or pushdown logic
 
-**Specific failures we've seen:**
-```sql
--- What AI generated:
-SELECT customer_id, SUM(amount) as revenue
-FROM transactions  
-WHERE date >= '2024-10-01' AND date <= '2024-12-31'
-GROUP BY customer_id
-ORDER BY revenue DESC
-LIMIT 10
+**Problem**: "Compare HR headcount to Finance payroll"  
+**Tool**: Custom Python agent  
+**Failure**: Different employee ID formats, couldn't match records  
+**Why**: No entity resolution strategy
 
--- What was actually needed:
-SELECT c.customer_id, SUM(t.recognized_amount) as revenue
-FROM transactions t
-JOIN customers c ON t.customer_id = c.id
-WHERE t.recognition_date >= fiscal_quarter_start('Q4', 2024)
-  AND t.recognition_date < fiscal_quarter_end('Q4', 2024) + INTERVAL '1 day'
-  AND c.is_test = false
-  AND t.status = 'recognized'
-GROUP BY c.customer_id
-ORDER BY revenue DESC, c.customer_id -- deterministic tie-breaking
-LIMIT 10
-```
+### Business Logic
 
----
+**Problem**: "Calculate MRR for March 2024"  
+**Tool**: ChatGPT Code Interpreter  
+**Failure**: Used current subscriptions, not historical state  
+**Why**: No understanding of slowly changing dimensions
 
-### 2. Multi-Source Data Federation
+**Problem**: "Show active users"  
+**Tool**: Cursor AI  
+**Failure**: Used "last login" instead of "revenue-generating action in 30 days"  
+**Why**: No access to business definitions
 
-**The Promise:** "AI can query across all your databases"
+### Complex Workflows
 
-**Reality Check:**
-- **Problem tried:** "Compare pipeline in Salesforce to recognized revenue in our data warehouse"
-- **Tool used:** LangChain agent with SQL tools for both databases
-- **How it failed:** 
-  - Pulled entire tables into memory causing OOM
-  - Didn't handle different definitions of "customer" between systems
-  - No awareness that Salesforce opportunities don't map 1:1 to warehouse invoices
-- **Root cause:** No query pushdown optimization, no entity resolution strategy, no understanding of business relationships
+**Problem**: "For each customer, analyze usage patterns and predict churn"  
+**Tool**: AutoGPT-style agent  
+**Failure**: Made 800+ API calls, hit rate limits, gave up  
+**Why**: No execution planning or state management
 
-**What practitioners report:**
-> "The agent tried to JOIN a 10M row table from Postgres with Salesforce by pulling both into pandas. After 20 minutes it crashed. Even if it worked, the opportunity stages don't match our revenue recognition stages."
+**Problem**: "Build weekly executive dashboard"  
+**Tool**: GPT-4 with function calling  
+**Failure**: Different metrics each run, no consistency  
+**Why**: Non-deterministic aggregations
 
----
+### Data Quality Issues
 
-### 3. Unstructured Data Extraction
+**Problem**: "Deduplicate customer records"  
+**Tool**: Claude with database access  
+**Failure**: Merged different people with same name  
+**Why**: No fuzzy matching or confidence scoring
 
-**The Promise:** "AI can structure any text data for analysis"
+**Problem**: "Categorize support tickets"  
+**Tool**: GPT-4 API  
+**Failure**: Different categories each run  
+**Why**: Stochastic classification without consistency
 
-**Reality Check:**
-- **Problem tried:** "Categorize support tickets by issue type and analyze resolution time"
-- **Tool used:** GPT-4 API to classify tickets, then SQL for analysis
-- **How it failed:**
-  - Different categories each run (non-deterministic)
-  - No way to update misclassified tickets
-  - Couldn't explain why tickets were categorized certain ways
-- **Root cause:** Stochastic classification without persistence, no audit trail, no human-in-the-loop correction
+### Compliance Problems
 
-**What practitioners report:**
-> "We ran the same classification three times and got three different distributions. Customer complaint about 'login issues' was classified as 'authentication', 'user error', and 'technical issue' in different runs."
+**Problem**: "Average salary by department"  
+**Tool**: Text-to-SQL  
+**Failure**: Showed individual salaries for small departments  
+**Why**: No privacy protection or aggregation rules
 
----
+**Problem**: "Export customer data for analysis"  
+**Tool**: Database chatbot  
+**Failure**: Included PII and sensitive fields  
+**Why**: No data governance awareness
 
-### 4. Complex Multi-Step Workflows
+## Patterns We See
 
-**The Promise:** "Agents can handle complex analytical workflows"
+**Common failure modes:**
+1. Wrong business logic (fiscal vs calendar, definitions)
+2. Scale issues (works on 100 rows, fails on millions)
+3. No determinism (different results each run)
+4. Missing context (test data, cancelled orders)
+5. No state management (can't resume failures)
+6. Privacy violations (exposing PII)
 
-**Reality Check:**
-- **Problem tried:** "For each customer, get their usage data, support tickets, and payment history, then identify churn risks"
-- **Tool used:** AutoGPT-style agent
-- **How it failed:**
-  - Timeout after 200+ API calls
-  - No progress save/resume
-  - Kept re-fetching same data
-  - Final result was incomplete with no indication of what was missed
-- **Root cause:** No execution plan, no state management, no partial failure handling
+## Submit Your Examples
 
-**What practitioners report:**
-> "The agent made 847 API calls, hit rate limits, waited, tried again, then gave up. We had no idea how far it got or what it was trying to do."
+Create a GitHub issue with:
+- What you tried
+- What failed  
+- Any relevant context
 
----
-
-### 5. Business Term Ambiguity
-
-**The Promise:** "AI understands business context"
-
-**Reality Check:**
-- **Problem tried:** "Show me our active users"
-- **Tool used:** Cursor to write SQL
-- **How it failed:** Used last login date when we define "active" as "performed revenue-generating action in last 30 days"
-- **Root cause:** No access to business glossary, no mechanism to ask for clarification
-
-**What practitioners report:**
-> "Every team has different definitions. 'Customer' means account to Sales, user to Product, and billing entity to Finance. The AI just picks one randomly."
-
----
-
-### 6. Time-Based Business Logic
-
-**The Promise:** "AI handles temporal queries naturally"
-
-**Reality Check:**
-- **Problem tried:** "Calculate MRR as of March 15, 2024"
-- **Tool used:** Claude with SQL access
-- **How it failed:** 
-  - Used current subscription states, not historical
-  - Didn't handle mid-month upgrades/downgrades
-  - Wrong currency conversion rates (used today's rates)
-- **Root cause:** No SCD2 awareness, no point-in-time joins, no temporal business logic
-
-**Specific example that failed:**
-```python
-# What AI tried:
-mrr = subscriptions.query("status == 'active'").monthly_amount.sum()
-
-# What was needed:
-mrr = calculate_mrr_as_of(
-    date='2024-03-15',
-    include_trials=False,
-    fx_rates=historical_fx_rates('2024-03-15'),
-    proration_method='daily',
-    recognition_rules=revenue_recognition_policy_v2
-)
-```
-
----
-
-### 7. Entity Resolution
-
-**The Promise:** "AI can match records across systems"
-
-**Reality Check:**
-- **Problem tried:** "Deduplicate customer records between CRM and billing system"
-- **Tool used:** GPT-4 with database access
-- **How it failed:**
-  - Matched "John Smith" records that were different people
-  - Didn't match "IBM" with "International Business Machines"
-  - No confidence scores or explanation for matches
-- **Root cause:** No fuzzy matching strategy, no domain-specific rules, no human review process
-
----
-
-### 8. Event Sequences and Funnels
-
-**The Promise:** "Describe your funnel and AI will calculate it"
-
-**Reality Check:**
-- **Problem tried:** "Calculate our signup to paid conversion funnel with 7-day attribution window"
-- **Tool used:** ChatGPT to generate SQL
-- **How it failed:**
-  - Wrong attribution (last-touch vs first-touch)
-  - Didn't handle users who entered funnel multiple times
-  - Timezone issues corrupted day boundaries
-- **Root cause:** No sessionization logic, no attribution model selection, no timezone handling
-
----
-
-### 9. External API Integration
-
-**The Promise:** "AI agents can gather data from any API"
-
-**Reality Check:**
-- **Problem tried:** "Get GitHub issues for our repos and match with deployment incidents"
-- **Tool used:** LangChain agent with API tools
-- **How it failed:**
-  - No pagination handling (only got first 100 issues)
-  - No rate limit respect (got blocked)
-  - No caching (repeated same calls)
-  - Couldn't match issues to incidents (different ID formats)
-- **Root cause:** No API state management, no retry logic, no data reconciliation strategy
-
----
-
-### 10. Compliance and Governance
-
-**The Promise:** "AI respects data governance rules"
-
-**Reality Check:**
-- **Problem tried:** "Average salary by department"
-- **Tool used:** Text-to-SQL with GPT-4
-- **How it failed:** 
-  - Returned individual salaries for departments with <5 people
-  - Included terminated employees who should be excluded
-  - No audit log of who accessed what data
-- **Root cause:** No row-level security enforcement, no PII detection, no audit trail
-
-**What practitioners report:**
-> "It happily returned SSNs when asked for 'employee identifiers'. We had to shut it down immediately."
-
----
-
-### 11. Statistical Analysis
-
-**The Promise:** "AI can run statistical tests"
-
-**Reality Check:**
-- **Problem tried:** "Is our A/B test significant?"
-- **Tool used:** Code Interpreter
-- **How it failed:**
-  - Used t-test on non-normal data
-  - No multiple comparison correction
-  - Ignored clustering in the data
-  - Reported p-value without confidence intervals
-- **Root cause:** No assumption checking, no guardrail metrics, wrong test selection
-
----
-
-### 12. Discovering Hidden Relationships
-
-**The Promise:** "AI finds insights in your data"
-
-**Reality Check:**
-- **Problem tried:** "Find which support tickets relate to the same issue"
-- **Tool used:** Claude with database access
-- **How it failed:**
-  - Only found exact title matches
-  - Couldn't identify issues described differently
-  - No confidence scoring for relationships
-  - No way to validate or correct discoveries
-- **Root cause:** No semantic similarity, no clustering strategy, no human-in-the-loop validation
-
----
-
-## Contributing Your Failures
-
-**Template for new contributions:**
-
-```markdown
-### [Problem Category]
-
-**Problem I tried to solve:**
-[Specific description of what you needed]
-
-**What I tried:**
-- Tool: [Specific AI tool/framework]
-- Approach: [How you tried to use it]
-
-**How it failed:**
-- [Specific failure mode 1]
-- [Specific failure mode 2]
-
-**Example:**
-[Show actual vs expected output if possible]
-
-**My hypothesis for why it failed:**
-[Your analysis of root cause]
-
-**What a working solution would need:**
-- [Requirement 1]
-- [Requirement 2]
-```
-
----
-
-## Patterns We're Seeing
-
-After collecting hundreds of failures, patterns emerge:
-
-**AI tools consistently fail when:**
-1. **Business logic matters** - "Revenue" never means just SUM(amount)
-2. **Multiple systems interact** - Different schemas, different definitions, different update cycles
-3. **Determinism is required** - Same query must give same results
-4. **Scale matters** - Works on 100 rows, fails on 100M rows
-5. **Errors cascade** - One wrong assumption corrupts everything downstream
-6. **Audit matters** - Need to explain and verify every decision
-7. **State matters** - Can't just retry from scratch when things fail
-
-**What might actually work:**
-- Semantic layers that encode business logic
-- Deterministic planning before execution
-- Pushdown optimization to avoid data movement
-- Explicit state management and checkpointing
-- Human-in-the-loop for ambiguity resolution
-- Audit trails for every decision
-
----
-
-## Join the Investigation
-
-We're building this benchmark to find what actually works. If you've:
-- **Hit these walls** - Share your specific failures
-- **Found workarounds** - Document what worked
-- **Have hypotheses** - Propose techniques to test
-
-Every contribution helps us understand why AI fails on real enterprise data and how to fix it.
+We'll add it to our benchmark suite.
