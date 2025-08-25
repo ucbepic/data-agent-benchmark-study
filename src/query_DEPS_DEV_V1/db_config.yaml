@@ -1,9 +1,0 @@
-db_clients:
-  package_dataset:
-    db_type: sqlite
-    db_path: query_dataset/package_query.db
-  project_dataset:
-    db_type: duckdb               # Database type: DuckDB
-    db_path: query_dataset/project_query.db 
-
-

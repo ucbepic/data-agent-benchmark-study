@@ -1,9 +1,0 @@
-db_clients:
-  books_dataset:
-    db_type: postgres
-    db_name: bookreview_db
-    sql_file: query_dataset/books_info.sql
-  review_dataset:
-    db_type: sqlite
-    db_path: query_dataset/review_query.db
-

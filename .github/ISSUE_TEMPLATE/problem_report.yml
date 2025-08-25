@@ -1,0 +1,102 @@
+name: Problem Report
+description: Submit a real data analysis problem where AI tools failed
+title: "[PROBLEM] "
+labels: ["problem", "benchmark-contribution"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to our benchmark! Your real-world problem helps us build better evaluations.
+        
+  - type: textarea
+    id: what-tried
+    attributes:
+      label: What I tried to do
+      description: Describe what you were trying to accomplish
+      placeholder: |
+        Example: 
+        I needed to calculate our quarterly customer churn rate for the board meeting. This required:
+        - Identifying customers who were active at the start of Q3 2024
+        - Finding which of those customers had cancelled or gone inactive by end of Q3
+        - The tricky part: "customer" in Salesforce means the account that signed the contract, 
+          but in our product database it's individual users under that account
+        - Also needed to exclude trial accounts and internal test accounts
+    validations:
+      required: true
+      
+  - type: textarea
+    id: tools-used
+    attributes:
+      label: Tools/approach I used
+      description: What AI tools or approaches did you try?
+      placeholder: |
+        Example:
+        First attempt: Used Claude with our database schema to write SQL queries. Gave it the table 
+        structures for both Salesforce and our product DB.
+        
+        Second attempt: Tried GPT-4 with more detailed prompts explaining the relationship between 
+        accounts and users.
+        
+        Third attempt: Built a LangChain agent with separate tools for each database, hoping it 
+        would figure out how to join them correctly.
+    validations:
+      required: true
+      
+  - type: textarea
+    id: how-failed
+    attributes:
+      label: How it failed
+      description: What went wrong? Be specific about the failure mode
+      placeholder: |
+        Example:
+        The AI consistently failed in three ways:
+        1. Couldn't match records between systems - Salesforce uses account IDs like "001D000000AbCdE" 
+           while our product DB uses integer user IDs and a separate account_uuid field
+        2. When it did try to join, it would match on company name, which gave tons of false matches 
+           (we have 50+ "Acme Corp" variations)
+        3. It kept including trial accounts in the churn calculation even when I explicitly said to 
+           exclude them - turns out our trial flag is in a third system (Stripe) that it never thought to check
+    validations:
+      required: true
+      
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any other relevant details (data sources, scale, business rules, etc.)
+      placeholder: |
+        Example: 
+        - Data volume: 10M rows in product logs, 500K Salesforce records
+        - Fiscal quarters don't align with calendar quarters
+        - Multiple currency types need conversion
+    validations:
+      required: false
+      
+  - type: dropdown
+    id: category
+    attributes:
+      label: Problem category (optional)
+      description: Which category best fits your problem?
+      options:
+        - Single-Source SQL
+        - Cross-Source Federation
+        - Unstructured Data
+        - Multi-Step Workflows
+        - Business Logic Ambiguity
+        - Time-Series/Temporal
+        - Entity Resolution
+        - External APIs
+        - Compliance/Security
+        - Statistical Analysis
+        - Graph/Network Analysis
+        - Other/Unsure
+    validations:
+      required: false
+      
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution agreement
+      options:
+        - label: I agree this problem can be used in the public benchmark
+          required: true
