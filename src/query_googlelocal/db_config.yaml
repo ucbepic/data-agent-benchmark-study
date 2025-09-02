@@ -1,9 +1,0 @@
-db_clients:
-  business_dataset:
-    db_type: postgres
-    db_name: googlelocal_db
-    sql_file: query_dataset/business_description.sql
-  review_dataset:
-    db_type: sqlite
-    db_path: query_dataset/review_query.db
-

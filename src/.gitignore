@@ -1,6 +1,0 @@
-.env
-*.csv
-*.json
-!**/ground_truth.csv
-!**/query.json
-/dataclean_code/

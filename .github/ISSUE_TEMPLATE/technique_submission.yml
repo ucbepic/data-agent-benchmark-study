@@ -1,0 +1,121 @@
+name: Technique Submission
+description: Submit a technique or approach for AI data analysis
+title: "[TECHNIQUE] "
+labels: ["technique", "benchmark-contribution"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share your technique or approach for AI-powered data analysis. We'll test it against the benchmark!
+        
+  - type: input
+    id: technique-name
+    attributes:
+      label: Technique name
+      description: What do you call this approach?
+      placeholder: Example: Semantic Layer + LLM
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Explain how your technique works
+      placeholder: |
+        Example: 
+        Instead of letting the LLM directly write SQL against raw tables, I pre-define all business 
+        logic in a semantic layer (using dbt semantic layer). The approach works like this:
+        
+        1. All metrics (revenue, churn, active users) are defined once in YAML with explicit SQL logic
+        2. The semantic layer handles all the complex joins, date logic, and aggregations
+        3. The LLM only needs to understand which metrics to query, not HOW to calculate them
+        4. User asks "What's our MRR for last quarter?" → LLM queries metric('mrr') with time filter
+        5. The semantic layer compiles this to the actual complex SQL with proper revenue recognition
+    validations:
+      required: true
+      
+  - type: textarea
+    id: why-better
+    attributes:
+      label: Why it might work better
+      description: What problems does this solve that other approaches don't?
+      placeholder: |
+        Example:
+        This solves several critical problems:
+        
+        1. Business logic consistency: "Revenue" always means the same thing - no more getting 
+           different numbers because the LLM used bookings instead of recognized revenue
+        
+        2. Reduces hallucination: The LLM can't write incorrect JOIN conditions or miss important 
+           filters because it's not writing SQL at all
+        
+        3. Governance built-in: Sensitive data and PII can be masked at the semantic layer level, 
+           the LLM never sees raw SSNs or salaries
+        
+        4. Faster iteration: When business logic changes (like fiscal year definition), update it 
+           once in the semantic layer instead of re-training or re-prompting the LLM
+    validations:
+      required: true
+      
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation details (optional)
+      description: Any specific tools, libraries, or code examples
+      placeholder: |
+        Example:
+        - Uses dbt for semantic layer
+        - LLM generates queries against metric definitions
+        - Python orchestrator handles execution
+    validations:
+      required: false
+      
+  - type: dropdown
+    id: technique-type
+    attributes:
+      label: Technique type
+      description: How would you categorize this approach?
+      options:
+        - Text-to-SQL variant
+        - RAG-based
+        - Tool calling/Function calling
+        - Semantic layer
+        - Multi-agent system
+        - Graph-based
+        - Custom LLM fine-tuning
+        - Hybrid approach
+        - Other
+    validations:
+      required: true
+      
+  - type: textarea
+    id: tested
+    attributes:
+      label: Have you tested this?
+      description: Any results or observations from using this technique
+      placeholder: |
+        Example:
+        We tested this on ~200 queries from our analytics team over 3 months:
+        
+        Success cases (90% accuracy):
+        - Standard metrics: "Show revenue by region for Q2"
+        - Period comparisons: "Month-over-month growth in active users"
+        - Complex filters: "Enterprise customers in EMEA with >$100k ARR"
+        
+        Failure cases:
+        - Exploratory analysis: "Find interesting patterns in user behavior" - semantic layer can't help here
+        - Ad-hoc calculations: "What if we defined churn differently?" - requires changing the semantic layer
+        - Cross-metric math: "Revenue per active user" when these are separate metrics with different grains
+        
+        Performance: Queries run in 2-5 seconds vs 30+ seconds for direct SQL generation (less LLM back-and-forth)
+    validations:
+      required: false
+      
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution agreement
+      options:
+        - label: I agree this technique can be tested and results shared publicly
+          required: true

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: General Discussion
+    url: https://github.com/ucbepic/data-agent-benchmark/discussions
+    about: For general questions and discussions about the benchmark
+  - name: Documentation
+    url: https://github.com/ucbepic/data-agent-benchmark/blob/main/README.md
+    about: Check our documentation for more information
