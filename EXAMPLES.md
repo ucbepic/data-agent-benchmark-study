@@ -1,104 +1,111 @@
-# Problem Examples
+# Example Submissions (detailed)
 
-Real data problems where AI tools failed. These help us build better benchmarks.
+These show the **level of detail** that lets UCB recreate cases internally (no data required).
 
-## How to Read These
+---
 
-Each example shows:
-- **Problem**: What someone tried to do
-- **Tool**: What they used
-- **Failure**: Exactly what went wrong
-- **Why**: Root cause (if known)
+## Example 1 — Cross‑source churn with stitching & fiscal calendars
+**Category:** Cross-Source Federation; Entity Resolution; Temporal/SCD  
+**Business question:** Calculate **account churn** for **Q3 FY2024** and list top churn reasons.  
+**Time:** Q3 FY2024; **fiscal year starts July**; timezone UTC; late events T+3 days.
 
-## Example Problems
+**Data sources & backends**
+- Salesforce: `Account`, `Opportunity` (≈500k rows), hourly sync
+- Snowflake (product): `events`, `sessions` (~10M rows/day)
+- Stripe: `subscriptions`, `invoices` via API (daily snapshot)
 
-### SQL Generation Failures
+**Entities & identifiers**
+- `account` (Salesforce `account_id`), `user` (product `user_id`), billing `account_uuid`
+- Source of truth: billing_status and ARR from Stripe; account hierarchy from Salesforce.
 
-**Problem**: "Show me top customers by revenue last quarter"  
-**Tool**: Claude with database schema  
-**Failure**: Used calendar quarter instead of fiscal quarter, ignored currency conversion  
-**Why**: No business context about fiscal calendars or multi-currency setup
+**Join logic & rules**
+- Stitch users → accounts via `account_uuid` (prefer Stripe over Salesforce on conflicts)
+- Exclude test/internal accounts (`email LIKE '%@yourco.com'` or `account.tier='internal'`)
+- Active user = ≥1 **revenue‑generating** event in 30 days (not “last login”)
+- Churned = subscription cancelled **or** no revenue‑generating event for 90 consecutive days, as of FY quarter end.
 
-**Problem**: "Find customers who haven't ordered in 90 days"  
-**Tool**: GPT-4 text-to-SQL  
-**Failure**: Included test accounts and cancelled orders  
-**Why**: No knowledge of data quality rules
+**Expected output shape (no data)**
+```
 
-### Multi-Database Queries
+grain: account\_id x fiscal\_quarter
+columns:
 
-**Problem**: "Match Salesforce opportunities to Stripe payments"  
-**Tool**: LangChain agent with SQL tools  
-**Failure**: Pulled entire tables into memory, crashed on 10M rows  
-**Why**: No query optimization or pushdown logic
+* account\_id: string (PK)
+* fiscal\_quarter: string (e.g., FY2024-Q3)
+* churned: boolean
+* churn\_reason: enum \[non-payment, voluntary-cancel, downgrade, unknown]
+* arr\_usd: number
 
-**Problem**: "Compare HR headcount to Finance payroll"  
-**Tool**: Custom Python agent  
-**Failure**: Different employee ID formats, couldn't match records  
-**Why**: No entity resolution strategy
+```
 
-### Business Logic
+**Tools attempted**
+- GPT‑4 SQL agent (Snowflake + Postgres tool), LangChain router, Claude for plan critique.
 
-**Problem**: "Calculate MRR for March 2024"  
-**Tool**: ChatGPT Code Interpreter  
-**Failure**: Used current subscriptions, not historical state  
-**Why**: No understanding of slowly changing dimensions
+**Failure mode**
+1) Used **calendar** not fiscal quarter  
+2) Joined on **company name** → false matches (“Acme”)  
+3) Ignored SCD2: used **current** territory instead of **as‑of** boundaries
 
-**Problem**: "Show active users"  
-**Tool**: Cursor AI  
-**Failure**: Used "last login" instead of "revenue-generating action in 30 days"  
-**Why**: No access to business definitions
+---
 
-### Complex Workflows
+## Example 2 — ARR/MRR with SCD2 + FX at transaction time
+**Category:** Temporal/Units/FX; Business Term Disambiguation  
+**Business question:** Compute **MRR by region for June 2025** in USD using **txn‑time FX**.  
+**Time:** June 1–30, 2025; timezone per transaction; rates from ECB at txn timestamp.
 
-**Problem**: "For each customer, analyze usage patterns and predict churn"  
-**Tool**: AutoGPT-style agent  
-**Failure**: Made 800+ API calls, hit rate limits, gave up  
-**Why**: No execution planning or state management
+**Data sources & backends**
+- Snowflake `billing.transactions` (multi‑currency)
+- Snowflake `dim_customer_scd2` (valid_from/valid_to; region assignments)
+- FX reference table `fx_rates` (timestamped rates, currency→USD)
 
-**Problem**: "Build weekly executive dashboard"  
-**Tool**: GPT-4 with function calling  
-**Failure**: Different metrics each run, no consistency  
-**Why**: Non-deterministic aggregations
+**Rules**
+- As‑of join from `transactions.timestamp` to `dim_customer_scd2` (SCD2)  
+- Convert each txn using **rate at txn timestamp**; aggregate to MRR at month‑end.
 
-### Data Quality Issues
+**Expected output shape**
+```
 
-**Problem**: "Deduplicate customer records"  
-**Tool**: Claude with database access  
-**Failure**: Merged different people with same name  
-**Why**: No fuzzy matching or confidence scoring
+grain: region x month
+columns:
 
-**Problem**: "Categorize support tickets"  
-**Tool**: GPT-4 API  
-**Failure**: Different categories each run  
-**Why**: Stochastic classification without consistency
+* region: string
+* month: date (eom)
+* mrr\_usd: number
 
-### Compliance Problems
+```
 
-**Problem**: "Average salary by department"  
-**Tool**: Text-to-SQL  
-**Failure**: Showed individual salaries for small departments  
-**Why**: No privacy protection or aggregation rules
+**Failure mode**
+- Used **current** region instead of historical SCD2 as‑of  
+- Applied **month‑average FX** instead of txn‑time rates  
+- Double‑counted upgrades/downgrades within month
 
-**Problem**: "Export customer data for analysis"  
-**Tool**: Database chatbot  
-**Failure**: Included PII and sensitive fields  
-**Why**: No data governance awareness
+---
 
-## Patterns We See
+## Example 3 — Governance: salary metrics with RLS & k‑min
+**Category:** Governance & Compliance; Production Control Flow  
+**Business question:** Average **salary by department** while enforcing **RLS** and **k ≥ 5**.  
+**Data sources:** Snowflake `hr.employees` (PII masked), `policies.sla_v3_2` (doc store)
 
-**Common failure modes:**
-1. Wrong business logic (fiscal vs calendar, definitions)
-2. Scale issues (works on 100 rows, fails on millions)
-3. No determinism (different results each run)
-4. Missing context (test data, cancelled orders)
-5. No state management (can't resume failures)
-6. Privacy violations (exposing PII)
+**Rules**
+- Apply row‑level security by requester’s org‑unit  
+- Enforce `k >= 5` per department; otherwise return `suppressed = true`
 
-## Submit Your Examples
+**Expected output shape**
+```
 
-Create a GitHub issue with:
-- What you tried
-- What failed  
-- Any relevant context
+grain: department
+columns:
 
-We'll add it to our benchmark suite.
+* department: string
+* avg\_salary\_usd: number | null
+* suppressed: boolean
+* policy\_citations: array<string>  # e.g., \["SLA v3.2 §4.1", "PII Masking §2.3"]
+
+```
+
+**Failure mode**
+- Returned individual salaries for small departments (k‑min ignored)  
+- No policy citations; leakage via verbose logs
+```
+
+---
