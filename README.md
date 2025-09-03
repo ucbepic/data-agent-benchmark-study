@@ -2,6 +2,8 @@
 
 **AI fails at enterprise data analysis. We're building a benchmark to help.**
 
+This project is supported and maintained by [UCB EPIC Data Lab](https://epic.berkeley.edu/) and [PromptQL](https://promptql.io/).
+
 ## The Problem
 
 Current AI tools consistently fail on production data analysis tasks:
