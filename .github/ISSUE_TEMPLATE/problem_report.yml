@@ -1,102 +1,161 @@
 name: Problem Report
-description: Submit a real data analysis problem where AI tools failed
-title: "[PROBLEM] "
-labels: ["problem", "benchmark-contribution"]
+description: Submit a real enterprise data analysis task where AI failed (essence-level only; no data)
+title: "[PROBLEM] <short business ask>"
+labels: ["type: problem", "needs: triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for contributing to our benchmark! Your real-world problem helps us build better evaluations.
-        
-  - type: textarea
-    id: what-tried
+        Thanks for contributing! Please **do not include any proprietary data or PII**.
+        We only need enough *business context and shape* so UCB can recreate a representative case internally.
+
+  - type: input
+    id: business-question
     attributes:
-      label: What I tried to do
-      description: Describe what you were trying to accomplish
-      placeholder: |
-        Example: 
-        I needed to calculate our quarterly customer churn rate for the board meeting. This required:
-        - Identifying customers who were active at the start of Q3 2024
-        - Finding which of those customers had cancelled or gone inactive by end of Q3
-        - The tricky part: "customer" in Salesforce means the account that signed the contract, 
-          but in our product database it's individual users under that account
-        - Also needed to exclude trial accounts and internal test accounts
+      label: Business question (exact ask)
+      description: The question you needed answered.
+      placeholder: e.g., Calculate churn from Salesforce + product usage for Q3 FY2024 (FY starts July)
     validations:
       required: true
-      
-  - type: textarea
-    id: tools-used
-    attributes:
-      label: Tools/approach I used
-      description: What AI tools or approaches did you try?
-      placeholder: |
-        Example:
-        First attempt: Used Claude with our database schema to write SQL queries. Gave it the table 
-        structures for both Salesforce and our product DB.
-        
-        Second attempt: Tried GPT-4 with more detailed prompts explaining the relationship between 
-        accounts and users.
-        
-        Third attempt: Built a LangChain agent with separate tools for each database, hoping it 
-        would figure out how to join them correctly.
-    validations:
-      required: true
-      
-  - type: textarea
-    id: how-failed
-    attributes:
-      label: How it failed
-      description: What went wrong? Be specific about the failure mode
-      placeholder: |
-        Example:
-        The AI consistently failed in three ways:
-        1. Couldn't match records between systems - Salesforce uses account IDs like "001D000000AbCdE" 
-           while our product DB uses integer user IDs and a separate account_uuid field
-        2. When it did try to join, it would match on company name, which gave tons of false matches 
-           (we have 50+ "Acme Corp" variations)
-        3. It kept including trial accounts in the churn calculation even when I explicitly said to 
-           exclude them - turns out our trial flag is in a third system (Stripe) that it never thought to check
-    validations:
-      required: true
-      
-  - type: textarea
-    id: context
-    attributes:
-      label: Additional context
-      description: Any other relevant details (data sources, scale, business rules, etc.)
-      placeholder: |
-        Example: 
-        - Data volume: 10M rows in product logs, 500K Salesforce records
-        - Fiscal quarters don't align with calendar quarters
-        - Multiple currency types need conversion
-    validations:
-      required: false
-      
+
   - type: dropdown
     id: category
     attributes:
-      label: Problem category (optional)
-      description: Which category best fits your problem?
+      label: Category (select all that apply)
+      multiple: true
       options:
         - Single-Source SQL
         - Cross-Source Federation
-        - Unstructured Data
-        - Multi-Step Workflows
-        - Business Logic Ambiguity
-        - Time-Series/Temporal
+        - Integrating Unstructured Data
+        - Production-Grade Control Flow
+        - Business Term Disambiguation
+        - Temporal, Unit & Currency-Aware (incl. SCD)
         - Entity Resolution
-        - External APIs
-        - Compliance/Security
-        - Statistical Analysis
-        - Graph/Network Analysis
+        - Time-Series, Cohorts & Funnels
+        - External APIs/SaaS/Open-Web
+        - Governance & Compliance
+        - Advanced Analytics (Stats/Graph)
+        - Implicit Relationship Discovery
         - Other/Unsure
     validations:
+      required: true
+
+  - type: textarea
+    id: time
+    attributes:
+      label: Time window & calendars
+      description: Time bounds, business/fiscal calendars, timezone, late-arriving data.
+      placeholder: |
+        e.g., Q3 FY2024 (FY starts July), timezone UTC; late events up to T+3 days
+    validations:
+      required: true
+
+  - type: textarea
+    id: sources
+    attributes:
+      label: Data sources & backends (no data; just names)
+      description: Systems and objects involved, approx. sizes, and freshness.
+      placeholder: |
+        Example:
+        - Salesforce: objects=Account, Opportunity (500k rows), refreshed hourly
+        - Snowflake: schema=product, tables=events, sessions (~10M rows/day)
+        - Stripe: charges, subscriptions (API)
+    validations:
+      required: true
+
+  - type: textarea
+    id: entities
+    attributes:
+      label: Entities & identifiers
+      description: Primary entities and IDs, and which system is source of truth.
+      placeholder: |
+        Example:
+        - Entities: account, user
+        - Identifiers: salesforce.account_id, product.user_id, billing.account_uuid
+        - Source of truth: ARR from Stripe; account hierarchy from Salesforce
+    validations:
+      required: true
+
+  - type: textarea
+    id: joins
+    attributes:
+      label: Join logic & business rules
+      description: How sources should be stitched; exclusions; precedence rules.
+      placeholder: |
+        Example:
+        - Join users → accounts by account_uuid; prefer Stripe over Salesforce on conflicts
+        - Exclude internal/test accounts where account.tier = 'internal' or email like '%@yourco.com'
+        - Treat cancelled orders as non-active; define "active" as ≥1 revenue-generating action / 30 days
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-shape
+    attributes:
+      label: Expected output shape (columns, types, grain)
+      description: The *shape* you expect back. No actual data required.
+      render: markdown
+      placeholder: |
+        grain: account_id x fiscal_quarter
+        columns:
+          - account_id: string (PK)
+          - fiscal_quarter: string (e.g., FY2024-Q3)
+          - churned: boolean
+          - churn_reason: enum [non-payment, cancellation, downgrade]
+          - arr_usd: number
+    validations:
+      required: true
+
+  - type: textarea
+    id: tools
+    attributes:
+      label: Tools/approach attempted
+      description: LLM(s), agents, semantic layer, tool selection, any prompts/settings that matter.
+      placeholder: |
+        e.g., GPT-4o + function calling; LangChain SQL agent (PG + SF tools); dbt semantic layer v1.7
+    validations:
+      required: true
+
+  - type: textarea
+    id: failure
+    attributes:
+      label: Failure mode (be specific)
+      description: What went wrong and how you knew; include wrong SQL/plan snippets if possible.
+      placeholder: |
+        1) Used calendar quarter vs fiscal quarter
+        2) Joined on company name → false matches ('Acme')
+        3) Ignored SCD2; used current territory instead of historical as-of
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scale
+    attributes:
+      label: Scale (approximate)
+      options:
+        - ≤100k rows
+        - 100k–10M rows
+        - 10M–1B rows
+        - ">1B rows"
+    validations:
       required: false
-      
+
+  - type: textarea
+    id: policies
+    attributes:
+      label: Policy/constraints (optional)
+      description: RLS, masking, k-min, contract/policy docs that define rules (no uploads—just describe).
+      placeholder: |
+        Example: RLS by region; salary metrics require k>=5; FX by txn timestamp from ECB rates
+    validations:
+      required: false
+
   - type: checkboxes
-    id: contribution
+    id: agreements
     attributes:
       label: Contribution agreement
       options:
+        - label: I confirm this submission contains **no proprietary data or secrets**
+          required: true
         - label: I agree this problem can be used in the public benchmark
           required: true

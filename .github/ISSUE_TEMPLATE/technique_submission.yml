@@ -1,121 +1,96 @@
 name: Technique Submission
-description: Submit a technique or approach for AI data analysis
-title: "[TECHNIQUE] "
-labels: ["technique", "benchmark-contribution"]
+description: Submit a technique/approach to test on the benchmark
+title: "[TECHNIQUE] <name>"
+labels: ["type: technique", "needs: triage"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Share your technique or approach for AI-powered data analysis. We'll test it against the benchmark!
-        
   - type: input
     id: technique-name
     attributes:
       label: Technique name
-      description: What do you call this approach?
-      placeholder: Example: Semantic Layer + LLM
+      placeholder: e.g., Semantic Layer + LLM with dbt metrics
     validations:
       required: true
-      
+
   - type: textarea
-    id: description
+    id: summary
     attributes:
-      label: Description
-      description: Explain how your technique works
+      label: Summary (how it works)
+      description: The core idea in 3–6 bullets.
       placeholder: |
-        Example: 
-        Instead of letting the LLM directly write SQL against raw tables, I pre-define all business 
-        logic in a semantic layer (using dbt semantic layer). The approach works like this:
-        
-        1. All metrics (revenue, churn, active users) are defined once in YAML with explicit SQL logic
-        2. The semantic layer handles all the complex joins, date logic, and aggregations
-        3. The LLM only needs to understand which metrics to query, not HOW to calculate them
-        4. User asks "What's our MRR for last quarter?" → LLM queries metric('mrr') with time filter
-        5. The semantic layer compiles this to the actual complex SQL with proper revenue recognition
+        - LLM queries metrics via semantic layer APIs; no direct SQL generation
+        - Tooling enforces business calendars and SCD2
+        - Deterministic retries + caching for external APIs
     validations:
       required: true
-      
-  - type: textarea
-    id: why-better
-    attributes:
-      label: Why it might work better
-      description: What problems does this solve that other approaches don't?
-      placeholder: |
-        Example:
-        This solves several critical problems:
-        
-        1. Business logic consistency: "Revenue" always means the same thing - no more getting 
-           different numbers because the LLM used bookings instead of recognized revenue
-        
-        2. Reduces hallucination: The LLM can't write incorrect JOIN conditions or miss important 
-           filters because it's not writing SQL at all
-        
-        3. Governance built-in: Sensitive data and PII can be masked at the semantic layer level, 
-           the LLM never sees raw SSNs or salaries
-        
-        4. Faster iteration: When business logic changes (like fiscal year definition), update it 
-           once in the semantic layer instead of re-training or re-prompting the LLM
-    validations:
-      required: true
-      
-  - type: textarea
-    id: implementation
-    attributes:
-      label: Implementation details (optional)
-      description: Any specific tools, libraries, or code examples
-      placeholder: |
-        Example:
-        - Uses dbt for semantic layer
-        - LLM generates queries against metric definitions
-        - Python orchestrator handles execution
-    validations:
-      required: false
-      
+
   - type: dropdown
-    id: technique-type
+    id: applies-to
     attributes:
-      label: Technique type
-      description: How would you categorize this approach?
+      label: Where it applies (select all)
+      multiple: true
       options:
-        - Text-to-SQL variant
-        - RAG-based
-        - Tool calling/Function calling
-        - Semantic layer
-        - Multi-agent system
-        - Graph-based
-        - Custom LLM fine-tuning
-        - Hybrid approach
-        - Other
+        - Single-Source SQL
+        - Cross-Source Federation
+        - Integrating Unstructured Data
+        - Production-Grade Control Flow
+        - Business Term Disambiguation
+        - Temporal, Unit & Currency-Aware (incl. SCD)
+        - Entity Resolution
+        - Time-Series, Cohorts & Funnels
+        - External APIs/SaaS/Open-Web
+        - Governance & Compliance
+        - Advanced Analytics (Stats/Graph)
+        - Implicit Relationship Discovery
     validations:
       required: true
-      
+
   - type: textarea
-    id: tested
+    id: io-contract
     attributes:
-      label: Have you tested this?
-      description: Any results or observations from using this technique
+      label: Input/Output contract
+      description: What metadata or components must exist? What does it return?
       placeholder: |
-        Example:
-        We tested this on ~200 queries from our analytics team over 3 months:
-        
-        Success cases (90% accuracy):
-        - Standard metrics: "Show revenue by region for Q2"
-        - Period comparisons: "Month-over-month growth in active users"
-        - Complex filters: "Enterprise customers in EMEA with >$100k ARR"
-        
-        Failure cases:
-        - Exploratory analysis: "Find interesting patterns in user behavior" - semantic layer can't help here
-        - Ad-hoc calculations: "What if we defined churn differently?" - requires changing the semantic layer
-        - Cross-metric math: "Revenue per active user" when these are separate metrics with different grains
-        
-        Performance: Queries run in 2-5 seconds vs 30+ seconds for direct SQL generation (less LLM back-and-forth)
+        Requires: dbt semantic layer, metrics YAML, SLA policy doc store.
+        Returns: SQL or metric results with citations to applied policies.
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Dependencies & environment
+      description: Libraries/services, dialects, data engines; any version constraints.
+      placeholder: |
+        dbt=1.7+, Snowflake/BigQuery, OpenAI function calling, Redis cache
     validations:
       required: false
-      
+
+  - type: textarea
+    id: evaluation
+    attributes:
+      label: Observed results / claims
+      description: Any empirical results, wins/failures, or expected tradeoffs.
+      placeholder: |
+        On ~200 internal queries, 90% accuracy on standard metrics; weaker on exploratory tasks.
+    validations:
+      required: false
+
+  - type: textarea
+    id: limits
+    attributes:
+      label: Known limitations
+      description: Where it struggles or is out of scope.
+      placeholder: |
+        Requires well-defined metrics; cross-metric math with different grains is tricky.
+    validations:
+      required: false
+
   - type: checkboxes
-    id: contribution
+    id: agreements
     attributes:
       label: Contribution agreement
       options:
+        - label: I confirm this submission contains **no proprietary data or secrets**
+          required: true
         - label: I agree this technique can be tested and results shared publicly
           required: true
